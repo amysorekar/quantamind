@@ -12,3 +12,4 @@ I chose the twitter dataset because:
 - No PII or PHI
 - Smaller size for fine-tuning (after subsetting)
 
+## LLM choice
