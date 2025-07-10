@@ -31,14 +31,14 @@ Two Different Approaches:
 
 • A clear and detailed README file with:
 
-• Project description
+    • Project description
 
-• Model & dataset used
-
-• Explanation of both methods
-
-• Steps to run the code
-
-• Results and performance comparison
-
-• Final conclusion and recommendation
+    • Model & dataset used
+    
+    • Explanation of both methods
+    
+    • Steps to run the code
+    
+    • Results and performance comparison
+    
+    • Final conclusion and recommendation

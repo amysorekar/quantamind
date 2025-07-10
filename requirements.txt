@@ -1,0 +1,16 @@
+transformers
+peft
+accelerate
+datasets
+rouge-score
+huggingface_hub
+matplotlib
+textblob
+optimum
+auto-gptq
+sentence-transformers
+tqdm
+scikit-learn
+nltk
+pandas
+torch
