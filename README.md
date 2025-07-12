@@ -4,7 +4,7 @@
 
 This project explores and compares two lightweight fine-tuning strategies for adapting a base language model (TinyLlama-1.1B) to customer support tasks: QLoRA and Prompt Tuning. The objective is to benchmark their effectiveness under strict compute and data constraints, reflecting real-world deployment scenarios where low-resource adaptation is key.
 
-The dataset consists of short customer service message-response pairs, pre-tokenized into prompt-response format. Four models were trained: two QLoRA variants (with `r=4` and `r=8`) and two Prompt Tuning variants (with 10 and 20 virtual tokens). Each model was trained for 3 epochs on 200 examples using Google Colab's free GPU tier.
+The dataset consists of short customer service message-response pairs, pre-tokenized into prompt-response format. Four models were trained: two QLoRA variants (with `r=4` and `r=8`) and two Prompt Tuning variants (with 10 and 20 virtual tokens). Each model was trained for 3 epochs on 400 examples using Google Colab's free GPU tier.
 
 A comprehensive evaluation pipeline was built to assess performance using BLEU and ROUGE scores, latency, error analysis, sentiment/priority-aware prompting, and category-based breakdowns. This evaluation helps capture not only aggregate accuracy, but also qualitative strengths and weaknesses.
 
@@ -62,14 +62,14 @@ Quantamind's mission centers on building LLMs optimized for business workflows. 
 - Processing both structured and unstructured business data
 - Automating tasks like Q&A, summarization, and agent support
 
-To simulate a realistic use case of LLM fine-tuning for business-customer interaction, I chose a publicly available **Twitter customer support dataset**.
+To simulate a realistic use case of LLM fine-tuning for business-customer interaction, I chose a publicly available [Twitter Customer Support Dataset](https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter).
 
 ### Why this dataset?
 
 - **Real-world interactions**: The dataset contains genuine customer inquiries and brand responses, closely resembling support ticket dialogues.
 - **Natural format for LLMs**: Each sample is a straightforward input-output pair — _user message_ → _agent response_ — which maps cleanly to causal language modeling.
 - **No privacy concerns**: The dataset contains no PHI or PII, making it safe to use without additional redaction.
-- **Manageable size**: I subsetted the data to 400 high-quality examples to allow for experimentation and rapid iteration within the compute constraints of Colab’s free tier.
+- **Manageable size**: I subsetted the data to 400 examples to allow for experimentation and rapid iteration within the compute constraints of Colab’s free tier.
 
 If this were a production system or had access to more resources, I would have opted for a larger dataset with richer multi-turn dialogues, possibly including synthetic augmentation, or at the very least, used the entire dataset.
 
@@ -98,7 +98,7 @@ This project uses a combination of core machine learning libraries, evaluation t
 - **`tqdm`** – Adds progress bars to training and evaluation loops.
 - **`gc`, `warnings`, `time`, `os`** – For memory cleanup, suppressing logs, timing operations, and file handling.
 - **`pandas`** – For reading JSONL files and organizing results into tables and plots.
-- **`sklearn.model_selection.train_test_split`** – Included but not used; originally for data splitting if needed.
+
 
 ### Colab-Specific
 
@@ -114,7 +114,10 @@ I used two lightweight fine-tuning methods: **QLoRA** and **Prompt Tuning**, eac
 ### Fine-Tuning Approach
 
 Each model was fine-tuned using 400 training examples for 3 epochs. Preprocessing involved formatting each example into a natural dialogue format:
-`Customer message: {input}\nAgent response: {output}`.
+```
+Customer message: {input}
+Agent response:   {output}
+```
 
 
 Tokenization was done with a max length of 512 and padding enabled. The training setup used:
@@ -243,7 +246,9 @@ A lightweight rule-based inference system was implemented to simulate reasoning:
 - **Priority Scoring**: Inputs were scanned for urgency-related keywords to assign a priority level (high, medium, low).
 - These attributes were embedded into the prompt in the format:
 ```
-[PRIORITY: HIGH] [SENTIMENT: NEGATIVE] Customer message: {input} Agent response:
+[PRIORITY: HIGH] [SENTIMENT: NEGATIVE] 
+Customer message: {input} 
+Agent response:
 ```
 
 - This added structure allowed the model to generate more context-sensitive responses and introduced a reasoning layer into generation without needing a separate classifier or additional fine-tuning step.
@@ -286,7 +291,7 @@ To understand how specific hyperparameters impacted performance, I conducted lig
 - **Observation**: Despite having more trainable parameters, the 20-token variant did not significantly outperform the 10-token model. In fact, ROUGE-1, ROUGE-2, and ROUGE-L were all slightly lower, suggesting that for small datasets, shorter prompts may generalize better. BLEU remained near-zero for both, reinforcing the limited impact of prompt length on n-gram matching in this context.
 
 ### Takeaway
-Both ablations confirmed that increasing capacity improves performance — but gains were bounded by the dataset size. These findings reinforce the idea that LoRA rank and prompt length should be tuned based on the available data and task complexity.
+Increasing adapter or prompt capacity did not consistently improve performance in this short training run. The higher-rank QLoRA (r=8) showed a modest improvement over r=4 (~1–2 BLEU/ROUGE points), while doubling virtual tokens in prompt tuning actually slightly hurt performance, possibly due to overfitting or noisy gradients on a small dataset. That said, the limited training time and dataset size likely capped the performance ceiling — it’s possible that with longer training or more data, the higher-capacity configurations would show clearer advantages. For now, these results highlight that bigger configs aren't always better out of the box and must be tuned relative to training budget and task complexity.
 
 
 ## Pipeline Overview
@@ -369,13 +374,13 @@ Despite limited resources, all four models were successfully trained, evaluated,
 
 
 ## Results Summary
-
-| Model         | BLEU   | ROUGE-1 | ROUGE-2 | ROUGE-L | Latency (s) | Trainable Params (%) |
-|---------------|--------|---------|---------|---------|--------------|------------------------|
-| QLoRA-r8      | 0.0022 | 0.1395  | 0.0228  | 0.0927  | 4.56         | 0.1023%               |
-| Prompt-10     | 0.0000 | 0.1404  | 0.0184  | 0.0933  | 4.87         | 0.0019%               |
-| Prompt-20     | 0.0010 | 0.1255  | 0.0170  | 0.0861  | 5.18         | 0.0037%               |
-| QLoRA-r4      | 0.0020 | 0.1093  | 0.0130  | 0.0721  | 4.56         | 0.0512%               |
+   
+| Model      |   BLEU     | ROUGE-1    | ROUGE-2    | ROUGE-L    | Latency (s) | Trainable Params (%) |
+|------------|------------|------------|------------|------------|-------------|----------------------|
+| QLoRA-r8   | **0.0022** | 0.1395     | **0.0228** | 0.0927     | **4.56**    | **0.1023%**          |
+| Prompt-10  | 0.0000     | **0.1404** | 0.0184     | **0.0933** | 4.87        | 0.0019%              |
+| Prompt-20  | 0.0010     | 0.1255     | 0.0170     | 0.0861     | 5.18        | 0.0037%              |
+| QLoRA-r4   | 0.0020     | 0.1093     | 0.0130     | 0.0721     | **4.56**    | **0.1023%**          |
 
 **Observations**:
 - BLEU scores were low across the board, consistent with the small dataset size and short training.
@@ -431,7 +436,7 @@ pip install -r requirements.txt
 
 ### 2. Download Dataset
 
-- Download the [Customer Support Dataset](https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0).
+- Download the [Customer Support Dataset](https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter).
 - Rename the downloaded file to `support_data.csv`.
 - Move it into a folder named `data/` in your working directory.
 
